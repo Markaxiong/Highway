@@ -30,20 +30,20 @@ class HighwayEnv(AbstractEnv):
                 "action": {
                     "type": "DiscreteMetaAction",
                 },
-                "lanes_count": 4,
+                "lanes_count": 2,
                 "vehicles_count": 50,
                 "controlled_vehicles": 1,
                 "initial_lane_id": None,
                 "duration": 40,  # [s]
                 "ego_spacing": 2,
-                "vehicles_density": 1,
-                "collision_reward": -1,  # The reward received when colliding with a vehicle.
+                "vehicles_density": 2,
+                "collision_reward": -10,  # The reward received when colliding with a vehicle.
                 "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
                 # zero for other lanes.
                 "high_speed_reward": 0.4,  # The reward received when driving at full speed, linearly mapped to zero for
                 # lower speeds according to config["reward_speed_range"].
                 "lane_change_reward": 0,  # The reward received at each lane change action.
-                "reward_speed_range": [20, 30],
+                "reward_speed_range": [0, 10],
                 "normalize_reward": True,
                 "offroad_terminal": False,
             }
@@ -75,7 +75,7 @@ class HighwayEnv(AbstractEnv):
         for others in other_per_controlled:
             vehicle = Vehicle.create_random(
                 self.road,
-                speed=25,
+                speed=10,
                 lane_id=self.config["initial_lane_id"],
                 spacing=self.config["ego_spacing"],
             )
@@ -91,6 +91,21 @@ class HighwayEnv(AbstractEnv):
                 )
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
+                
+    # 获取最右侧车道的索引
+        rightmost_lane = self.road.network.lanes_list()[self.config["lanes_count"] - 1]
+
+        # 添加一辆静止的车辆在最右侧车道上
+        stationary_vehicle = other_vehicles_type(
+            self.road,
+            rightmost_lane.position(110, 0),  # 假设位置参数为(50, 0)，可以根据需要调整
+            heading=rightmost_lane.heading_at(50),
+            speed=0
+        )
+        stationary_vehicle.speed = 0  # 确保车辆静止
+        self.road.vehicles.append(stationary_vehicle)
+
+
 
     def _reward(self, action: Action) -> float:
         """
